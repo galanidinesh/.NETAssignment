@@ -4,6 +4,8 @@ using ReqResApiClient.Configuration;
 using ReqResApiClient.Exceptions;
 using ReqResApiClient.Interfaces;
 using ReqResApiClient.Models;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace ReqResApiClient.Clients
 {
@@ -20,22 +22,43 @@ namespace ReqResApiClient.Clients
 
         public async Task<User> GetUserByIdAsync(int userId)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, $"users/{userId}");
-
-            var response = await _httpClient.SendAsync(request);
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                    throw new NotFoundException($"User with ID {userId} not found.");
+                var request = new HttpRequestMessage(HttpMethod.Get, $"users/{userId}");
 
-                throw new ApiException($"Failed to fetch user with ID {userId}: {response.ReasonPhrase}");
+                var response = await _httpClient.SendAsync(request);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                        throw new NotFoundException($"User with ID {userId} not found.");
+
+                    throw new ApiException($"Failed to fetch user with ID {userId}: {response.ReasonPhrase}");
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+
+                var userResponse = JsonConvert.DeserializeObject<UserResponse>(content);
+
+                if (userResponse?.Data == null)
+                {
+                    throw new ApiException("Invalid user data returned from API.");
+                }
+
+                return userResponse.Data;
             }
-
-            var content = await response.Content.ReadAsStringAsync();
-            var userResponse = JsonConvert.DeserializeObject<UserResponse>(content);
-
-            return userResponse?.Data ?? throw new ApiException("Invalid user data returned from API.");
+            catch (HttpRequestException ex)
+            {
+                throw new ApiException("Network error while calling API.", ex);
+            }
+            catch (JsonException ex)
+            {
+                throw new ApiException("Failed to parse API response.", ex);
+            }
+            catch (TaskCanceledException ex)
+            {
+                throw new ApiException("API request timed out.", ex);
+            }
         }
 
         public async Task<IEnumerable<User>> GetAllUsersAsync()
@@ -43,34 +66,48 @@ namespace ReqResApiClient.Clients
             var users = new List<User>();
             int page = 1, totalPages;
 
-            do
+            try
             {
-                var request = new HttpRequestMessage(HttpMethod.Get, $"users?page={page}");
-
-                var response = await _httpClient.SendAsync(request);
-
-                if (!response.IsSuccessStatusCode)
+                do
                 {
-                    throw new ApiException($"Failed to fetch users on page {page}: {response.ReasonPhrase}");
-                }
+                    var request = new HttpRequestMessage(HttpMethod.Get, $"users?page={page}");
 
-                var content = await response.Content.ReadAsStringAsync();
-                var userList = JsonConvert.DeserializeObject<UserListResponse>(content);
+                    var response = await _httpClient.SendAsync(request);
 
-                if (userList?.Data != null)
-                {
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        throw new ApiException($"Failed to fetch users on page {page}: {response.ReasonPhrase}");
+                    }
+
+                    var content = await response.Content.ReadAsStringAsync();
+
+                    var userList = JsonConvert.DeserializeObject<UserListResponse>(content);
+
+                    if (userList?.Data == null)
+                    {
+                        throw new ApiException("Invalid user list data returned from API.");
+                    }
+
                     users.AddRange(userList.Data);
                     totalPages = userList.TotalPages;
                     page++;
-                }
-                else
-                {
-                    throw new ApiException("Invalid user list data returned from API.");
-                }
 
-            } while (page <= totalPages);
+                } while (page <= totalPages);
 
-            return users;
+                return users;
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new ApiException("Network error while calling API.", ex);
+            }
+            catch (JsonException ex)
+            {
+                throw new ApiException("Failed to parse API response.", ex);
+            }
+            catch (TaskCanceledException ex)
+            {
+                throw new ApiException("API request timed out.", ex);
+            }
         }
     }
 }
