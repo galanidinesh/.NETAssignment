@@ -4,15 +4,21 @@ using ReqResApiClient.Configuration;
 using ReqResApiClient.Exceptions;
 using ReqResApiClient.Interfaces;
 using ReqResApiClient.Models;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace ReqResApiClient.Clients
 {
     public class ReqResApiClient : IReqResApiClient
     {
+        /// <summary>
+        /// The HTTP client
+        /// </summary>
         private readonly HttpClient _httpClient;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ReqResApiClient"/> class.
+        /// </summary>
+        /// <param name="httpClient">The HTTP client.</param>
+        /// <param name="apiSettings">The API settings.</param>
         public ReqResApiClient(HttpClient httpClient, IOptions<ApiSettings> apiSettings)
         {
             _httpClient = httpClient;
@@ -20,6 +26,23 @@ namespace ReqResApiClient.Clients
             _httpClient.DefaultRequestHeaders.Add("x-api-key", apiSettings.Value.ApiKey);
         }
 
+        /// <summary>
+        /// Gets the user by identifier asynchronous.
+        /// </summary>
+        /// <param name="userId">The user identifier.</param>
+        /// <returns></returns>
+        /// <exception cref="ReqResApiClient.Exceptions.NotFoundException">User with ID {userId} not found.</exception>
+        /// <exception cref="ReqResApiClient.Exceptions.ApiException">
+        /// Failed to fetch user with ID {userId}: {response.ReasonPhrase}
+        /// or
+        /// Invalid user data returned from API.
+        /// or
+        /// Network error while calling API.
+        /// or
+        /// Failed to parse API response.
+        /// or
+        /// API request timed out.
+        /// </exception>
         public async Task<User> GetUserByIdAsync(int userId)
         {
             try
@@ -61,6 +84,21 @@ namespace ReqResApiClient.Clients
             }
         }
 
+        /// <summary>
+        /// Gets all users asynchronous.
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="ReqResApiClient.Exceptions.ApiException">
+        /// Failed to fetch users on page {page}: {response.ReasonPhrase}
+        /// or
+        /// Invalid user list data returned from API.
+        /// or
+        /// Network error while calling API.
+        /// or
+        /// Failed to parse API response.
+        /// or
+        /// API request timed out.
+        /// </exception>
         public async Task<IEnumerable<User>> GetAllUsersAsync()
         {
             var users = new List<User>();

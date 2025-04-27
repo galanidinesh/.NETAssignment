@@ -14,6 +14,10 @@ namespace ReqResApiClient.ConsoleDemo
 {
     internal class Program
     {
+        /// <summary>
+        /// Defines the entry point of the application.
+        /// </summary>
+        /// <param name="args">The arguments.</param>
         static async Task Main(string[] args)
         {
             var host = CreateHostBuilder(args).Build();
@@ -75,7 +79,11 @@ namespace ReqResApiClient.ConsoleDemo
             }
         }
 
-
+        /// <summary>
+        /// Creates the host builder.
+        /// </summary>
+        /// <param name="args">The arguments.</param>
+        /// <returns></returns>
         static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                  .ConfigureAppConfiguration((context, config) =>
@@ -89,15 +97,11 @@ namespace ReqResApiClient.ConsoleDemo
                     // Bind ApiSettings from configuration
                     services.Configure<ApiSettings>(context.Configuration.GetSection("ApiSettings"));
 
+                    // Bind CacheSettings from configuration
+                    services.Configure<CacheSettings>(context.Configuration.GetSection("CacheSettings"));
+
                     // Bind RetryPolicySettings from configuration
                     services.Configure<RetryPolicySettings>(context.Configuration.GetSection("RetryPolicySettings"));
-
-                    //we can also bind configuration like this.
-                    //services.Configure<ApiSettings>(options =>
-                    //{
-                    //    options.BaseUrl = "https://reqres.in/api/";
-                    //    options.ApiKey = "reqres-free-v1";
-                    //});
 
                     services.AddMemoryCache();
                     services.AddHttpClient<IReqResApiClient, ReqResApiClient.Clients.ReqResApiClient>()
