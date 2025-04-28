@@ -14,7 +14,6 @@ It demonstrates **clean architecture principles**, **error handling**, **resilie
 - [Unit Testing](#unit-testing)
 - [Design Decisions](#design-decisions)
 - [Bonus Features](#bonus-features)
-- [Potential Improvements](#potential-improvements)
 
 ---
 
